@@ -14,7 +14,7 @@ Git calls it a "secret"
 In Linux
 export OPENAI_API_KEY="<the openai key>" 
 printenv OPENAI_API_KEY 
-
+ 
 On Windows
 setx OPENAI_API_KEY <the openai key>
 type "set" to see the
