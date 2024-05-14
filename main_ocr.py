@@ -8,6 +8,9 @@ Tim Schofield
 This uses GTP4-V and GTP4 to OCR images from a local folder
 and process them into JSON
 
+WARNING: If you put the actual API key in here Git will not allow it to be pushed
+Git calls it a "secret"
+
 In Linux
 export OPENAI_API_KEY="<the openai key>" 
 printenv OPENAI_API_KEY 
