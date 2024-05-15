@@ -19,20 +19,25 @@ On Windows
 setx OPENAI_API_KEY <the openai key>
 type "set" to see the
 
+2024-05-14
+Moved to Linux
+
 """
- 
+from db import OPENAI_API_KEY
 from openai import OpenAI
 import base64
 import requests
 import os
 from pathlib import Path
 
+
 try:
-  my_api_key = os.environ["OPENAI_API_KEY"]
+  my_api_key = OPENAI_API_KEY           # os.environ["OPENAI_API_KEY"]
   client = OpenAI(api_key=my_api_key)
 except Exception as ex:
     print("Exception:", ex)
     exit()
+
 
 # Function to base64 encode an image
 def encode_image(image_path):
@@ -56,14 +61,10 @@ for image_path in image_path_list:
     # Getting the base64 string
     base64_image = encode_image(image_path)
 
-    print("here1")
-
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {my_api_key}"
     }
-    
-    print("here2")
     
     payload = {
         "model": "gpt-4-vision-preview",
@@ -83,10 +84,9 @@ for image_path in image_path_list:
         ],
         "max_tokens": 300
     }
-    print("here3")
+
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
-    print("here4")
     print("\n########################## OCR OUTPUT " + str(image_path) + " ##########################\n")
     input_to_json = ocr_output.json()['choices'][0]['message']['content']
     print(input_to_json)

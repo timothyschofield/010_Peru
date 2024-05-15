@@ -1,2 +1,4 @@
 back/
 source_images/
+__pycache__/
+db.py
