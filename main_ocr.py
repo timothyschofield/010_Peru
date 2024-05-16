@@ -57,7 +57,7 @@ keys = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'
 keys_concatenated = ", ".join(keys)
 
 # The last sentence about letter "K" really helps a lot - experiment with more prompts like this
-request = f"Please read this hebarium sheet and extract {keys_concatenated}. Barcode numbers begin with 'K'" 
+request = f"Please read this hebarium sheet and extract {keys_concatenated}. Barcode numbers begin with 'K'. Please return in JSON format with {keys_concatenated} as keys" 
 
 image_folder = Path("source_images/")
 image_path_list = list(image_folder.glob("*.jpg"))
@@ -104,27 +104,10 @@ for image_path in image_path_list:
     #print("json object", ocr_output.json())                   # a JSON formated object
 
     print("\n########################## OCR OUTPUT " + str(image_path) + " ##########################\n")
-    input_to_json = ocr_output.json()['choices'][0]['message']['content']
-    print(input_to_json)
+    json_returned = ocr_output.json()['choices'][0]['message']['content']
+    print(json_returned)
 
-    content_request = f"Format this as JSON where {keys_concatenated} are keys"
-    # print(content_request)
-    
-    # Now convert to JSON
-    json_output = client.chat.completions.create(
-        model=MODEL, 
-        messages=[
-            {"role": "system", "content": content_request},
-            {"role": "user", "content": str(input_to_json)}
-            ]
-    )
-
-    print("\n##################### JSON " + str(image_path) + " ###############################\n")
-
-    print(json_output.choices[0].message.content)
-    print("#######################################################################################")
-    print("#######################################################################################\n")
-    
+  
   except Exception as ex:
       print("Exception:", ex)
 
