@@ -44,12 +44,15 @@ except Exception as ex:
     print("Exception:", ex)
     exit()
 
+# These are used to measure success/loss
+keys = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
+        "'latitude'", "'longitude'", "'language'", "'country'", "'description'", "'barcode number'"]
+keys_concatenated = ", ".join(keys)
 
-request = "Please read this hebarium sheet and extract collector and collector number, date, family, genus, species, altitude, latitude, longitude, location, country, description, language and the barcode number which begins with the letter 'K'"
+
+request = f"Please read this hebarium sheet and extract {keys_concatenated}. Barcode numbers begine with 'K'" 
 
 image_folder = Path("source_images/")
-print("source folder",image_folder.is_dir())
-
 image_path_list = list(image_folder.glob("*.jpg"))
 print(image_path_list)
 
@@ -68,7 +71,7 @@ for image_path in image_path_list:
     }
     
     payload = {
-        "model": "gpt-4-vision-preview",
+        "model": "gpt-4o",
         "messages": [
           {
             "role": "user",
@@ -92,12 +95,15 @@ for image_path in image_path_list:
     input_to_json = ocr_output.json()['choices'][0]['message']['content']
     print(input_to_json)
 
+    content_request = f"Format this as JSON where {keys_concatenated} are keys"
+    # print(content_request)
+    
     # Now convert to JSON
     json_output = client.chat.completions.create(
-        model="gpt-4", 
+        model="gpt-4o", 
 
         messages=[
-            {"role": "system", "content": "First, delete all occurances of '\n  '. Format this as JSON where 'Collector', 'Collector number', 'Date', 'Family', 'Genus', 'Species', 'Altitude', 'Location', 'Latitude', 'Longitude', 'Language', 'Country', 'Description' and 'Barcode number' are keys"},
+            {"role": "system", "content": content_request},
             {"role": "user", "content": str(input_to_json)}
             ]
     )
