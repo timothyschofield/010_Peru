@@ -1,4 +1,5 @@
-back/
+﻿back/
 source_images/
 __pycache__/
+output/
 db.py
