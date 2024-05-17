@@ -1,9 +1,8 @@
 """
 File : main_ocr.py
 
-Tim Schofield
-
-12 December 2023
+Author: Tim Schofield
+Date: 12 December 2023
 
 This uses GPT-4o to OCR images from a local folder
 and process them into JSON
@@ -21,9 +20,6 @@ type "set" to see the
 
 Then access the API key thus:
 my_api_key = os.environ["OPENAI_API_KEY"]
-
-2024-05-14
-Moved to Linux
 
 Need a metric
 def similar(a, b):
@@ -51,7 +47,7 @@ except Exception as ex:
 
 MODEL = "gpt-4o"
 
-index_col = "source_image"
+index_col = "source_images"
 
 # These are used to measure success/loss
 keys = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
@@ -78,7 +74,7 @@ json_returned1 = {
 }
 
 # The last sentence about letter "K" really helps a lot - experiment with more prompts like this
-request = f"Please read this hebarium sheet and extract {keys_concatenated}. Barcode numbers begin with 'K'. Please return in JSON format with {keys_concatenated} as keys" 
+prompt = f"Please read this hebarium sheet and extract {keys_concatenated}. Barcode numbers begin with 'K'. Please return in JSON format with {keys_concatenated} as keys" 
 
 image_folder = Path("source_images/")
 image_path_list = list(image_folder.glob("*.jpg"))
@@ -86,13 +82,10 @@ print(image_path_list)
 
 output_path = Path("output/out.csv")
 
-
-
 print("####################################### START OUTPUT ######################################")
-
-for image_path in image_path_list:
-
-  try:
+try:
+   
+  for image_path in image_path_list:
 
     # Getting the base64 string
     base64_image = encode_image(image_path)
@@ -109,7 +102,7 @@ for image_path in image_path_list:
           {
             "role": "user",
             "content": [
-              {"type": "text", "text": request},
+              {"type": "text", "text": prompt},
               {
                 "type": "image_url",
                 "image_url": {
@@ -138,8 +131,7 @@ for image_path in image_path_list:
     json_returned = "".join(json_returned)
     #print("clean1 ****",json_returned,"****")
 
-    json_returned = eval(json_returned)
-    dict_returned = dict(json_returned)
+    dict_returned = eval(json_returned) # JSON -> Dict
     dict_returned["source_image"] = str(image_path)
   
   
@@ -164,19 +156,20 @@ for image_path in image_path_list:
     dict_returned2[index_col] = str("source_images/K008888855.jpg")
     df1 = pd.DataFrame([dict_returned, dict_returned2])
     
-    # make source_image the index coloumn and bring to the front
-    df1.set_index(index_col)
-    df1 = df1[[index_col] + [x for x in df1.columns if x != index_col]]
+  #### oe for loop
     
-    print(df1)
+  # bring the source_images column to the from and make it the index
+  df1 = df1[[index_col] + [x for x in df1.columns if x != index_col]]
+  df1.set_index(index_col)
     
-    df1.to_csv(output_path, index=False)
+  print(df1)
+  
+  df1.to_csv(output_path, index=False)
 
-    print("########################")
+  print("########################")
 
-
-  except Exception as ex:
-      print("Exception:", ex)
+except Exception as ex:
+    print("Exception:", ex)
 
 print("####################################### END OUTPUT ######################################")
 
