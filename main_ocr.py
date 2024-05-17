@@ -28,6 +28,11 @@ https://stackoverflow.com/questions/17388213/find-the-similarity-metric-between-
 
 startTime = time.perf_counter()
 
+The last field returned in the JSON is:
+'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
+This can be used for accumulating usage information
+
+You uploaded an unsupported image. Please make sure your image is below 20 MB in size and is of one the following formats: ['png', 'jpeg', 'gif', 'webp']
 
 """
 from db import OPENAI_API_KEY
@@ -60,12 +65,22 @@ keys_concatenated = ", ".join(keys)
 output_list = []
 
 # The last sentence about letter "K" really helps a lot - experiment with more prompts like this
+
 prompt = (
   f"Read this hebarium sheet and extract {keys_concatenated}."
   f"Barcode numbers begin with 'K'."
+  f"Concentrate all your efforts on reading the text."
   f"Return in JSON format with {keys_concatenated} as keys."
   f"Do not return 'null' return 'none'."
   )
+
+
+prompt = (
+  f"Read this hebarium sheet and extract all the text you can see."
+  f"Concentrate all your efforts on reading the text."
+  f"Translate from Portuguese into English where appropriate."
+  )
+
 
 image_folder = Path("source_images/")
 image_path_list = list(image_folder.glob("*.jpg"))
@@ -103,17 +118,22 @@ try:
             ]
           }
         ],
-        "max_tokens": 300
-    }
+        "max_tokens": 2000   # max_tokens that can be returned? 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
+    } 
 
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
     # print(type(ocr_output)) <class 'requests.models.Response'>
     # print("apparent_encoding", ocr_output.apparent_encoding)  # utf-8
     # print("encoding", ocr_output.encoding)                    # utf-8
-    print("json object ****", ocr_output.json(), "****")                   # a JSON formated object
+    # print("json object ****", ocr_output.json(), "****")                   # a JSON formated object
+    # {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
+  
 
     print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     json_returned = ocr_output.json()['choices'][0]['message']['content']
+    print(f"content****{json_returned}****")
+    
+    print("###########################################")
     
     # Clean up the returned JSON
     json_returned = json_returned.split("json")[1:]     # remove leading ```json
@@ -126,9 +146,10 @@ try:
     dict_returned[index_col] = str(image_path) # Insert the image source file name
     
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
-
+   
   #################################### eo for loop
   
+ 
   # print("output_list", output_list)
   output_df = pd.DataFrame(output_list)
   
@@ -139,7 +160,7 @@ try:
   print(output_df)
   
   output_df.to_csv(output_path, index=False)
- 
+  
 
 except Exception as ex:
     print("Exception:", ex)
