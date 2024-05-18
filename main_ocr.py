@@ -60,15 +60,15 @@ MODEL = "gpt-4o"
 index_col = "source_image"
 
 # These are used to measure success/loss
-keys = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
+key_list = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'", "'barcode number'"]
-keys_concatenated = ", ".join(keys)
+keys_concatenated = ", ".join(key_list)
 
-
-
-
-
-
+# Make an empty output template for none-json output errors
+keys_striped = [key.replace("'", '') for key in key_list] # Get rid of surrounding quotes
+empty_output_dict = dict([])
+for this_key in keys_striped:
+  empty_output_dict[this_key] = "none"
 
 output_list = []
 
@@ -83,13 +83,12 @@ prompt = (
   f"Do not return 'null' return 'none'."
   )
 
-"""
+
 prompt = (
   f"Read this hebarium sheet and extract all the text you can see."
   f"Concentrate all your efforts on reading the text."
-  f"Translate from Portuguese into English where appropriate."
   )
-"""
+
 
 image_folder = Path("source_images/")
 image_path_list = list(image_folder.glob("*.jpg"))
@@ -144,20 +143,20 @@ try:
     
     print("here1")
     
-    
     # SOMETIMES STILL RETURNS "null"
-    
+  
+
     print("here2")
-    #if is_json(json_returned):
+    if is_json(json_returned):
+      dict_returned = eval(json_returned) # JSON -> Dict
+      print("here3")
+    else:
+      dict_returned = eval(str(empty_output_dict))
+      print("here4")
       
-      
-    dict_returned = eval(json_returned) # JSON -> Dict
-    print("here3")
     dict_returned[index_col] = str(image_path) # Insert the image source file name
-    
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
 
-     
   #################################### eo for loop
   
   # print("output_list", output_list)
@@ -169,9 +168,10 @@ try:
     
   print(output_df)
   
-  output_df.to_csv(output_path, index=False)
+  with open(output_path, "w") as f:
+    output_df.to_csv(f, index=False)
   
-
+  
 except Exception as ex:
     print("Exception:", ex)
 
