@@ -36,7 +36,7 @@ You uploaded an unsupported image. Please make sure your image is below 20 MB in
 
 """
 from db import OPENAI_API_KEY
-from helper_functions import encode_image, get_file_timestamp
+from helper_functions import encode_image, get_file_timestamp, is_json
 from openai import OpenAI
 import base64
 import requests
@@ -64,15 +64,22 @@ keys = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'", "'barcode number'"]
 keys_concatenated = ", ".join(keys)
 
+
+
+
+
+
+
 output_list = []
 
 # The last sentence about letter "K" really helps a lot - experiment with more prompts like this
-
+# NOTE: The line f"Do not wrap the JSON codes in JSON markers." gets rid of the leading '''json which you get otherwise
 prompt = (
   f"Read this hebarium sheet and extract {keys_concatenated}."
   f"Barcode numbers begin with 'K'."
   f"Concentrate all your efforts on reading the text."
   f"Return in JSON format with {keys_concatenated} as keys."
+  f"Do not wrap the JSON codes in JSON markers."
   f"Do not return 'null' return 'none'."
   )
 
@@ -135,20 +142,22 @@ try:
     json_returned = ocr_output.json()['choices'][0]['message']['content']
     print(f"content****{json_returned}****")
     
-    print("###########################################")
+    print("here1")
     
-    # Clean up the returned JSON
-    json_returned = json_returned.split("json")[1:]     # remove leading ```json
-    json_returned = "".join(json_returned)
-    json_returned = json_returned.split("```")[:-1]     # remove the last ``` - It must be the precise quote character 
-    json_returned = "".join(json_returned)
-    #print(f"clean1 ****{json_returned}****")
-
+    
+    # SOMETIMES STILL RETURNS "null"
+    
+    print("here2")
+    #if is_json(json_returned):
+      
+      
     dict_returned = eval(json_returned) # JSON -> Dict
+    print("here3")
     dict_returned[index_col] = str(image_path) # Insert the image source file name
     
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
-   
+
+     
   #################################### eo for loop
   
   # print("output_list", output_list)

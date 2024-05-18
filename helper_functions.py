@@ -1,6 +1,5 @@
+
 import base64
-
-
 # Function to base64 encode an image
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -20,7 +19,14 @@ def get_file_timestamp():
   return f"{year}-{month:02}-{day:02}T{hour:02}-{minute:02}-{second:02}"
     
     
-    
+import json
+def is_json(myjson):
+  try:
+    json.loads(myjson)
+  except ValueError as e:
+    return False
+  return True
+ 
     
     
     
