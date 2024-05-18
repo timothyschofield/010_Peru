@@ -57,17 +57,18 @@ except Exception as ex:
 
 MODEL = "gpt-4o"
 
-index_col = "source_image"
+source_image_col = "source_image"
+error_col = "ERROR"
 
 # These are used to measure success/loss
-key_list = ["'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
-        "'latitude'", "'longitude'", "'language'", "'country'", "'description'", "'barcode number'"]
-keys_concatenated = ", ".join(key_list)
+keys_in_quotes_list = ["'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
+        "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
+keys_concatenated = ", ".join(keys_in_quotes_list)
 
 # Make an empty output template for none-json output errors
-keys_striped = [key.replace("'", '') for key in key_list] # Get rid of surrounding quotes
+key_list = [key.replace("'", '') for key in keys_in_quotes_list] # Get rid of surrounding double quotes
 empty_output_dict = dict([])
-for this_key in keys_striped:
+for this_key in key_list:
   empty_output_dict[this_key] = "none"
 
 output_list = []
@@ -80,7 +81,7 @@ prompt = (
   f"Concentrate all your efforts on reading the text."
   f"Return in JSON format with {keys_concatenated} as keys."
   f"Do not wrap the JSON codes in JSON markers."
-  f"Do not return 'null' return 'none'."
+  f"If you find no value for a key, return 'none'."
   )
 
 
@@ -102,6 +103,8 @@ print("####################################### START OUTPUT ####################
 try:
    
   for image_path in image_path_list:
+
+    error_message = "OK"
 
     # Getting the base64 string
     base64_image = encode_image(image_path)
@@ -141,31 +144,31 @@ try:
     json_returned = ocr_output.json()['choices'][0]['message']['content']
     print(f"content****{json_returned}****")
     
-    print("here1")
-    
     # SOMETIMES STILL RETURNS "null"
-  
-
-    print("here2")
+    print("here1")
     if is_json(json_returned):
+      print("here2")
       dict_returned = eval(json_returned) # JSON -> Dict
       print("here3")
     else:
-      dict_returned = eval(str(empty_output_dict))
       print("here4")
+      dict_returned = eval(str(empty_output_dict))
+      error_message = "JSON NOT RETURNED FROM GPT"
+      print(error_message)
       
-    dict_returned[index_col] = str(image_path) # Insert the image source file name
+    dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
+    dict_returned[error_col] = str(error_message)           # Insert column for error message
+    
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
 
   #################################### eo for loop
   
-  # print("output_list", output_list)
   output_df = pd.DataFrame(output_list)
   
-  # bring the source_image column to the front and make it the index
-  output_df = output_df[[index_col] + [x for x in output_df.columns if x != index_col]]
-  output_df.set_index(index_col)
-    
+  # Bring these columns to the front
+  key_list = [source_image_col, error_col] + key_list
+  output_df = output_df[key_list]
+  
   print(output_df)
   
   with open(output_path, "w") as f:
