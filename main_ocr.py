@@ -36,7 +36,7 @@ You uploaded an unsupported image. Please make sure your image is below 20 MB in
 
 """
 from db import OPENAI_API_KEY
-from helper_functions import encode_image
+from helper_functions import encode_image, get_file_timestamp
 from openai import OpenAI
 import base64
 import requests
@@ -45,6 +45,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import time
+from datetime import datetime
 
 try:
   my_api_key = OPENAI_API_KEY          
@@ -74,19 +76,21 @@ prompt = (
   f"Do not return 'null' return 'none'."
   )
 
-
+"""
 prompt = (
   f"Read this hebarium sheet and extract all the text you can see."
   f"Concentrate all your efforts on reading the text."
   f"Translate from Portuguese into English where appropriate."
   )
-
+"""
 
 image_folder = Path("source_images/")
 image_path_list = list(image_folder.glob("*.jpg"))
 print(image_path_list)
 
-output_path = Path("output/out.csv")
+output_path_name = f"output/out_{get_file_timestamp()}.csv"
+output_path = Path(output_path_name)
+
 
 print("####################################### START OUTPUT ######################################")
 try:
@@ -126,8 +130,6 @@ try:
     # print("apparent_encoding", ocr_output.apparent_encoding)  # utf-8
     # print("encoding", ocr_output.encoding)                    # utf-8
     # print("json object ****", ocr_output.json(), "****")                   # a JSON formated object
-    # {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
-  
 
     print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     json_returned = ocr_output.json()['choices'][0]['message']['content']
@@ -149,7 +151,6 @@ try:
    
   #################################### eo for loop
   
- 
   # print("output_list", output_list)
   output_df = pd.DataFrame(output_list)
   
