@@ -68,6 +68,12 @@ error_col = "ERROR"
 # These are used to measure success/loss
 keys_in_quotes_list = ["'verbatim'", "'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
+
+keys_in_quotes_list = ["'verbatim'", "'barcode'", "'collector'", "'collectorNumber'", "'collector1'", "'collector2'", "'collector3'", "'collector4'", "'collectionDate'", "'collectionYYYY'", "'collectionMM'", 
+  "'collectionDD'", "'family'", "'genus'", "'species'", "'taxon_name'", "'altitude'", "'altitudeUnit'", "'country'", 
+  "'stateProvinceTerritory'", "'location'", "'latitude'", "'longitude'", "'language'", "'specimenNotesSpanish'", "'specimenNotesEnglish'"]
+
+
 keys_concatenated = ", ".join(keys_in_quotes_list)
 
 # Make an empty output template for none-json output errors
@@ -100,12 +106,13 @@ prompt = (
   f"The hebarium sheet may use Spanish words and Spanish characters."
   f"You are going to return all of this text in a JSON field called 'verbatim'"
   f"Go through the text you have extracted and return data in JSON format with {keys_concatenated} as keys."
+  f"Translate the 'specimenNotesSpanish' field into English and return it in the 'specimenNotesEnglish' field."
   f"Do not wrap the JSON data in JSON markers."
   f"If you find no value for a key, return 'none'."
 )
 
 source_type = "url" # url or offline
-number_of_urls_to_process = 1
+number_of_urls_to_process = 10
 
 
 if source_type == "url":
