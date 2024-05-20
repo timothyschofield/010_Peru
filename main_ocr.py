@@ -112,26 +112,37 @@ prompt = (
 )
 
 source_type = "url" # url or offline
-number_of_urls_to_process = 10
+number_of_urls_to_process = 5
 
+"""
+URL_PATH_LIST = ["http://fm-digital-assets.fieldmuseum.org/807/180/V0264589F.jpg",
+"http://fm-digital-assets.fieldmuseum.org/807/609/V0265016F.jpg",
+"http://fm-digital-assets.fieldmuseum.org/1546/979/V0318437F.jpg",
+"http://fm-digital-assets.fieldmuseum.org/560/212/V0119566F.jpg",
+"http://fm-digital-assets.fieldmuseum.org/932/762/V0315312F.jpg"]
+"""
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:number_of_urls_to_process]
+  image_path_list = URL_PATH_LIST   # [:number_of_urls_to_process]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
 
-print(image_path_list[:number_of_urls_to_process])
-
+print(f"Number to process:{len(image_path_list)}")
 
 output_path_name = f"output_gpt/out_{get_file_timestamp()}.csv"
 output_path = Path(output_path_name)
+
+count = 0
 
 print("####################################### START OUTPUT ######################################")
 try:
    
   for image_path in image_path_list:
-
+    
+    count+=1
+    print(f"count: {count}")
+    
     error_message = "OK"
 
     if source_type == "url":
@@ -168,50 +179,73 @@ try:
         ],
         "max_tokens": 2000   # max_tokens that can be returned? 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
-
+    
+    print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
+    print("here1")
+    
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-    # print(type(ocr_output)) <class 'requests.models.Response'>
+    print(f"ocr_output type:{type(ocr_output)}")  # <class 'requests.models.Response'>
     # print("apparent_encoding", ocr_output.apparent_encoding)  # utf-8
     # print("encoding", ocr_output.encoding)                    # utf-8
-    # print("json object ****", ocr_output.json(), "****")                   # a JSON formated object
-
-    print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
+    print("json object ****", ocr_output.json(),"****")                   
+   
+    """
+    1. Must handel when an error is returned
+    json object **** {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, 
+    read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}} ****
+    
+    2. Must write outputs to disk in batches
+    
+    """
+   
+    print("here2")
+   
+    print("here3")
     json_returned = ocr_output.json()['choices'][0]['message']['content']
-    print(f"content****{json_returned}****")
+    print("here4")
+    
+    print(f"content**** content would be printed here ****")
+    # json_returned = chr(0) # dosn't simulate bug
+    
+    # print(f"content****{json_returned}****")
+    print("here5")
     
     # SOMETIMES STILL RETURNS "null"
-    print("here1")
+    
+    print("here6")
+    
     if is_json(json_returned):
-      print("here2")
+      print("here7")
       dict_returned = eval(json_returned) # JSON -> Dict
       verbatim_text = "none"
-      print("here3")
+      print("here8")
     else:
-      print("here4")
+      print("here9")
       dict_returned = eval(str(empty_output_dict))
       error_message = "JSON NOT RETURNED FROM GPT"
       verbatim_text = json_returned
       print(error_message)
       
+    print("here10")
     dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
     dict_returned[error_col] = str(error_message)           # Insert column for error message
-    
+    print("here11")
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
-
+    print("here12")
   #################################### eo for loop
-  
+  print("here13")
   output_df = pd.DataFrame(output_list)
-  
+  print("here14")
   # Bring these columns to the front
   key_list = [source_image_col, error_col] + key_list
   output_df = output_df[key_list]
-  
-  print(output_df)
+  print("here15")
+  # print(output_df)
   
   with open(output_path, "w") as f:
     output_df.to_csv(f, index=False)
   
-  
+  print("here16")
 except Exception as ex:
     print("Exception:", ex)
 
