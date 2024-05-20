@@ -1,18 +1,17 @@
 """
+File : easy_ocr.py
 
-EasyOCR
+Author: Tim Schofield
+Date:2024-05-19
 
 Export to json file
 
-2024-05-19
 https://medium.com/@adityamahajan.work/easyocr-a-comprehensive-guide-5ff1cb850168
 https://github.com/JaidedAI/EasyOCR
 https://www.jaided.ai/easyocr/
 
 
 """
-
-
 import easyocr
 import cv2                          # Computer Vision 2 library
 import matplotlib.pyplot as plt
@@ -24,6 +23,7 @@ get_torch_cuda_info()
 
 file_name = "K004470351_100_label_only_nasty_hw"
 file_name = "K000663552_100_label_only"
+file_name = "K000663552"
 
 source_path = Path(f"source_easyocr/{file_name}.jpg")
 print(f"{source_path=}")
@@ -51,7 +51,6 @@ plt.rcParams['figure.figsize'] = (16,16)
 plt.imshow(image)
 plt.show()
 
-#plt.savefig("output.jpg")
 plt.imsave(output_path, image)
 print(' '.join(Total).split("SHIP TO", 1)[1])
 

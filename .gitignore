@@ -3,5 +3,5 @@ source_images/
 __pycache__/
 output/
 output_easyocr/
-source_easy_ocr/
+source_easyocr/
 db.py
