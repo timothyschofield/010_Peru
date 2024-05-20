@@ -5,7 +5,6 @@ def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
     
-
 from datetime import datetime
 # e.g. 2024-05-18T06-53-26
 def get_file_timestamp():
@@ -18,7 +17,6 @@ def get_file_timestamp():
   second = current_dateTime.second
   return f"{year}-{month:02}-{day:02}T{hour:02}-{minute:02}-{second:02}"
     
-    
 import json
 def is_json(myjson):
   try:
@@ -27,9 +25,28 @@ def is_json(myjson):
     return False
   return True
  
-    
-    
-    
+import torch
+def get_torch_cuda_info():
+  print("-----------------------")
+  print("torch version", torch.__version__)
+  print("CUDA avaliable", torch.cuda.is_available())
+  print("torch.CUDA version", torch.version.cuda)
+  print("-----------------------")
+
+  if torch.cuda.is_available():
+      print('__CUDNN VERSION:', torch.backends.cudnn.version())   # CUDA Deep Neural Networks
+      print('__Number CUDA Devices:', torch.cuda.device_count())
+      print('__CUDA Device Name:',torch.cuda.get_device_name(0))
+      print('__CUDA Device Total Memory [GB]:',torch.cuda.get_device_properties(0).total_memory/1e9)
+      print("-----------------------")
+
+  # Setup device agnostic code
+  if torch.cuda.is_available():
+      device = "cuda"
+  else:
+      device = "cpu"
+  print(f"device: {device}")  
+      
     
     
     
