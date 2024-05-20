@@ -59,7 +59,7 @@ for (bbox, text, prob) in result:
 # plt.imsave(output_path, image)
 
 print("-----------------------------------")
-print(f"Raw: {result}")
+print(f"Raw: {result}") 
 print("-----------------------------------")
 print(f"Words: {' '.join(Total)}")
 print("-----------------------------------")
