@@ -1,7 +1,7 @@
 ﻿back/
-source_images/
 __pycache__/
-output/
+input_easyocr/
+input_gpt/
 output_easyocr/
-source_easyocr/
+output_gpt/
 db.py

@@ -2,7 +2,7 @@
 File : easy_ocr.py
 
 Author: Tim Schofield
-Date:2024-05-19
+Date: 2024-05-19
 
 Export to json file
 
@@ -25,15 +25,15 @@ file_name = "K004470351_100_label_only_nasty_hw"
 file_name = "K000663552_100_label_only"
 file_name = "K000663552"
 
-source_path = Path(f"source_easyocr/{file_name}.jpg")
-print(f"{source_path=}")
+input_path = Path(f"input_easyocr/{file_name}.jpg")
+print(f"{input_path=}")
 
 output_path =  Path(f"output_easyocr/{file_name}_out_{get_file_timestamp()}.jpg")
 print(f"{output_path=}")
 
 reader = easyocr.Reader(['en'], gpu=True)
 
-image = cv2.imread(str(source_path))
+image = cv2.imread(str(input_path))
 result = reader.readtext(image)
 
 print(result)

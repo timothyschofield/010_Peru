@@ -92,14 +92,11 @@ prompt = (
   f"Concentrate all your efforts on reading the text."
   )
 
-
-
-
-image_folder = Path("source_images/")
+image_folder = Path("input_gpt/")
 image_path_list = list(image_folder.glob("*.jpg"))
 print(image_path_list)
 
-output_path_name = f"output/out_{get_file_timestamp()}.csv"
+output_path_name = f"output_gpt/out_{get_file_timestamp()}.csv"
 output_path = Path(output_path_name)
 
 
