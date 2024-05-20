@@ -64,10 +64,9 @@ MODEL = "gpt-4o"
 
 source_image_col = "source_image"
 error_col = "ERROR"
-verbatim_col = "verbatim"
 
 # These are used to measure success/loss
-keys_in_quotes_list = ["'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
+keys_in_quotes_list = ["'verbatim'", "'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
 keys_concatenated = ", ".join(keys_in_quotes_list)
 
@@ -92,23 +91,34 @@ prompt = (
 
 prompt = (
   f"Read this hebarium sheet and extract all the text you can see."
-  f"The hebarium sheet may use Spanish and Spanish characters."
+  f"The hebarium sheet may use Spanish words and Spanish characters."
   f"Concentrate all your efforts on reading the text."
   )
 
+prompt = (
+  f"Read this hebarium sheet and extract all the text you can see."
+  f"The hebarium sheet may use Spanish words and Spanish characters."
+  f"You are going to return all of this text in a JSON field called 'verbatim'"
+  f"Go through the text you have extracted and return data in JSON format with {keys_concatenated} as keys."
+  f"Do not wrap the JSON data in JSON markers."
+  f"If you find no value for a key, return 'none'."
+)
+
 source_type = "url" # url or offline
+number_of_urls_to_process = 1
+
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:3]
+  image_path_list = URL_PATH_LIST[:number_of_urls_to_process]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
 
-print(image_path_list[:3])
+print(image_path_list[:number_of_urls_to_process])
+
 
 output_path_name = f"output_gpt/out_{get_file_timestamp()}.csv"
 output_path = Path(output_path_name)
-
 
 print("####################################### START OUTPUT ######################################")
 try:
@@ -178,7 +188,6 @@ try:
       
     dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
     dict_returned[error_col] = str(error_message)           # Insert column for error message
-    dict_returned[verbatim_col] = str(verbatim_text)        # Raw text extracted from OCR
     
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
 
@@ -187,7 +196,7 @@ try:
   output_df = pd.DataFrame(output_list)
   
   # Bring these columns to the front
-  key_list = [source_image_col, error_col, verbatim_col] + key_list
+  key_list = [source_image_col, error_col] + key_list
   output_df = output_df[key_list]
   
   print(output_df)
