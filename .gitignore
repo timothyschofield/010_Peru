@@ -5,3 +5,4 @@ input_gpt/
 output_easyocr/
 output_gpt/
 db.py
+peru_url_list.py

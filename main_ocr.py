@@ -37,6 +37,7 @@ temperature = 0
 
 """
 from db import OPENAI_API_KEY
+from peru_url_list import URL_PATH_LIST
 from helper_functions import encode_image, get_file_timestamp, is_json
 from openai import OpenAI
 import base64
@@ -48,6 +49,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import time
 from datetime import datetime
+
+
 
 try:
   my_api_key = OPENAI_API_KEY          
@@ -89,12 +92,19 @@ prompt = (
 
 prompt = (
   f"Read this hebarium sheet and extract all the text you can see."
+  f"The hebarium sheet may use Spanish and Spanish characters."
   f"Concentrate all your efforts on reading the text."
   )
 
-image_folder = Path("input_gpt/")
-image_path_list = list(image_folder.glob("*.jpg"))
-print(image_path_list)
+source_type = "url" # url or offline
+
+if source_type == "url":
+  image_path_list = URL_PATH_LIST[:3]
+else:
+  image_folder = Path("input_gpt/")
+  image_path_list = list(image_folder.glob("*.jpg"))
+
+print(image_path_list[:3])
 
 output_path_name = f"output_gpt/out_{get_file_timestamp()}.csv"
 output_path = Path(output_path_name)
@@ -107,8 +117,11 @@ try:
 
     error_message = "OK"
 
-    # Getting the base64 string
-    base64_image = encode_image(image_path)
+    if source_type == "url":
+      url_request = image_path
+    else:
+      base64_image = encode_image(image_path)
+      url_request = f"data:image/jpeg;base64,{base64_image}"
 
     headers = {
         "Content-Type": "application/json",
@@ -130,7 +143,7 @@ try:
               {
                 "type": "image_url",
                 "image_url": {
-                  "url": f"data:image/jpeg;base64,{base64_image}"
+                  "url": url_request
                 }
               }
             ]
