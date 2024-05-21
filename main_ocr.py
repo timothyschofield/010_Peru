@@ -35,6 +35,18 @@ This can be used for accumulating usage information
 You uploaded an unsupported image. Please make sure your image is below 20 MB in size and is of one the following formats: ['png', 'jpeg', 'gif', 'webp']
 temperature = 0
 
+ocr_output response_code:500
+RAW ocr_output **** {'error': {'message': 'The server had an error processing your request. Sorry about that! You can retry your request, 
+or contact us through our help center at help.openai.com if you keep seeing this error. (
+  Please include the request ID req_80fe5b982069b0fd2d5d2d2ccca7080c in your email.)', 'type': 'server_error', 'param': None, 'code': None}} ****
+
+ 
+    1. Must handel when an error is returned
+    json object **** {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, 
+    read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}} ****
+    
+    2. Must write outputs to disk in batches
+    
 """
 import openai
 from openai import OpenAI
@@ -63,9 +75,6 @@ except Exception as ex:
 # MODEL = "gpt-4-vision-preview"
 MODEL = "gpt-4o"
 
-source_image_col = "source_image"
-error_col = "ERROR"
-
 # These are used to measure success/loss
 keys_in_quotes_list = ["'verbatim'", "'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
@@ -74,7 +83,6 @@ keys_in_quotes_list = ["'verbatim'", "'barcode'", "'collector'", "'collectorNumb
   "'collectionDD'", "'family'", "'genus'", "'species'", "'taxon_name'", "'altitude'", "'altitudeUnit'", "'country'", 
   "'stateProvinceTerritory'", "'location'", "'latitude'", "'longitude'", "'language'", "'specimenNotesSpanish'", "'specimenNotesEnglish'"]
 
-
 keys_concatenated = ", ".join(keys_in_quotes_list)
 
 # Make an empty output template for none-json output errors
@@ -82,6 +90,10 @@ key_list = [key.replace("'", '') for key in keys_in_quotes_list] # Get rid of su
 empty_output_dict = dict([])
 for this_key in key_list:
   empty_output_dict[this_key] = "none"
+
+source_image_col = "source_image"
+error_col = "ERROR"
+key_list_with_logging = [source_image_col, error_col] + key_list
 
 output_list = []
 
@@ -109,36 +121,26 @@ prompt = (
   f"Go through the text you have extracted and return data in JSON format with {keys_concatenated} as keys."
   f"Translate the 'specimenNotesSpanish' field into English and return it in the 'specimenNotesEnglish' field."
   f"Do not wrap the JSON data in JSON markers."
-  f"If you find no value for a key, return 'none'."
+  f"If you find no value for a key never return 'null', return 'none'."
 )
 
 source_type = "url" # url or offline
-number_of_urls_to_process = 10
-
-"""
-URL_PATH_LIST = ["http://fm-digital-assets.fieldmuseum.org/807/180/V0264589F.jpg",
-"http://fm-digital-assets.fieldmuseum.org/807/609/V0265016F.jpg",
-"http://fm-digital-assets.fieldmuseum.org/1546/979/V0318437F.jpg",
-"http://fm-digital-assets.fieldmuseum.org/560/212/V0119566F.jpg",
-"http://fm-digital-assets.fieldmuseum.org/932/762/V0315312F.jpg"]
-"""
+batch_size = 100
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:number_of_urls_to_process]
+  image_path_list = URL_PATH_LIST[200:]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
 
 print(f"Number to process:{len(image_path_list)}")
 
-output_path_name = f"output_gpt/out_{get_file_timestamp()}.csv"
-output_path = Path(output_path_name)
-
-count = 0
+time_stamp = get_file_timestamp()
+count = 200
 
 print("####################################### START OUTPUT ######################################")
 try:
-   
+  
   for image_path in image_path_list:
     
     count+=1
@@ -182,68 +184,56 @@ try:
     } 
     
     print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
-    print("here1")
     
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-    print(f"ocr_output type:{type(ocr_output)}")  # <class 'requests.models.Response'>
-
-
-    print("json object ****", ocr_output.json(),"****")                   
-   
-    """
-    1. Must handel when an error is returned
-    json object **** {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, 
-    read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}} ****
     
-    2. Must write outputs to disk in batches
+    response_code = ocr_output.status_code
+    print(f"ocr_output response_code:{response_code}")
     
-    """
+    if response_code != 200:
+      print("RAW ocr_output ****", ocr_output.json(),"****")                   
    
-    print("here2")
    
-    print("here3")
+   
     json_returned = ocr_output.json()['choices'][0]['message']['content']
-    print("here4")
-    
     print(f"content****{json_returned}****")
-    print("here5")
-    
-    # SOMETIMES STILL RETURNS "null"
-    
-    print("here6")
+
     
     if is_json(json_returned):
-      print("here7")
       dict_returned = eval(json_returned) # JSON -> Dict
-      verbatim_text = "none"
-      print("here8")
     else:
-      print("here9")
       dict_returned = eval(str(empty_output_dict))
+      dict_returned['verbatim'] = str(json_returned)
       error_message = "JSON NOT RETURNED FROM GPT"
-      verbatim_text = json_returned
       print(error_message)
       
-    print("here10")
+    
     dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
     dict_returned[error_col] = str(error_message)           # Insert column for error message
-    print("here11")
+
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
-    print("here12")
-  #################################### eo for loop
-  print("here13")
-  output_df = pd.DataFrame(output_list)
-  print("here14")
-  # Bring these columns to the front
-  key_list = [source_image_col, error_col] + key_list
-  output_df = output_df[key_list]
-  print("here15")
-  # print(output_df)
   
+    if count % batch_size == 0:
+      output_df = pd.DataFrame(output_list)
+      output_df = output_df[key_list_with_logging]  # Bring these columns to the front
+      
+      output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+      print(f"WRITING BATCH:{count}")
+      output_path = Path(output_path_name)
+      with open(output_path, "w") as f:
+        output_df.to_csv(f, index=False)
+  
+  #################################### eo for loop
+
+  output_df = pd.DataFrame(output_list)
+  output_df = output_df[key_list_with_logging]  # Bring these columns to the front
+  
+  output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+  print(f"WRITING BATCH:{count}")
+  output_path = Path(output_path_name)
   with open(output_path, "w") as f:
     output_df.to_csv(f, index=False)
   
-  print("here16")
   
 except openai.APIError as e:
   #Handle API error here, e.g. retry or log
