@@ -125,10 +125,12 @@ prompt = (
 )
 
 source_type = "url" # url or offline
-batch_size = 100
+batch_size = 50
+
+start_at = 900
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[200:]
+  image_path_list = URL_PATH_LIST[start_at:]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -136,7 +138,7 @@ else:
 print(f"Number to process:{len(image_path_list)}")
 
 time_stamp = get_file_timestamp()
-count = 200
+count = start_at
 
 print("####################################### START OUTPUT ######################################")
 try:
@@ -192,22 +194,26 @@ try:
     
     if response_code != 200:
       print("RAW ocr_output ****", ocr_output.json(),"****")                   
-   
-   
-   
-    json_returned = ocr_output.json()['choices'][0]['message']['content']
-    print(f"content****{json_returned}****")
-
-    
-    if is_json(json_returned):
-      dict_returned = eval(json_returned) # JSON -> Dict
-    else:
       dict_returned = eval(str(empty_output_dict))
-      dict_returned['verbatim'] = str(json_returned)
-      error_message = "JSON NOT RETURNED FROM GPT"
+      dict_returned['verbatim'] = str(ocr_output.json())
+      error_message = "200 NOT returned from GPT"
       print(error_message)
+    else:
+      json_returned = ocr_output.json()['choices'][0]['message']['content']
+      print(f"content****{json_returned}****")
+
+      if "null" in json_returned: 
+        print("null detected in json_returned and replace with 'none'")
+        json_returned = json_returned.replace("null", "'none'")
       
-    
+      if is_json(json_returned):
+        dict_returned = eval(json_returned) # JSON -> Dict
+      else:
+        dict_returned = eval(str(empty_output_dict))
+        dict_returned['verbatim'] = str(json_returned)
+        error_message = "JSON NOT RETURNED FROM GPT"
+        print(error_message)
+      
     dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
     dict_returned[error_col] = str(error_message)           # Insert column for error message
 
