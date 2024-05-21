@@ -36,10 +36,12 @@ You uploaded an unsupported image. Please make sure your image is below 20 MB in
 temperature = 0
 
 """
+import openai
+from openai import OpenAI
+
 from db import OPENAI_API_KEY
 from peru_url_list import URL_PATH_LIST
 from helper_functions import encode_image, get_file_timestamp, is_json
-from openai import OpenAI
 import base64
 import requests
 import os
@@ -49,7 +51,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import time
 from datetime import datetime
-
 
 
 try:
@@ -112,7 +113,7 @@ prompt = (
 )
 
 source_type = "url" # url or offline
-number_of_urls_to_process = 5
+number_of_urls_to_process = 10
 
 """
 URL_PATH_LIST = ["http://fm-digital-assets.fieldmuseum.org/807/180/V0264589F.jpg",
@@ -123,7 +124,7 @@ URL_PATH_LIST = ["http://fm-digital-assets.fieldmuseum.org/807/180/V0264589F.jpg
 """
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST   # [:number_of_urls_to_process]
+  image_path_list = URL_PATH_LIST[:number_of_urls_to_process]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -185,8 +186,8 @@ try:
     
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
     print(f"ocr_output type:{type(ocr_output)}")  # <class 'requests.models.Response'>
-    # print("apparent_encoding", ocr_output.apparent_encoding)  # utf-8
-    # print("encoding", ocr_output.encoding)                    # utf-8
+
+
     print("json object ****", ocr_output.json(),"****")                   
    
     """
@@ -204,10 +205,7 @@ try:
     json_returned = ocr_output.json()['choices'][0]['message']['content']
     print("here4")
     
-    print(f"content**** content would be printed here ****")
-    # json_returned = chr(0) # dosn't simulate bug
-    
-    # print(f"content****{json_returned}****")
+    print(f"content****{json_returned}****")
     print("here5")
     
     # SOMETIMES STILL RETURNS "null"
@@ -246,8 +244,21 @@ try:
     output_df.to_csv(f, index=False)
   
   print("here16")
-except Exception as ex:
-    print("Exception:", ex)
+  
+except openai.APIError as e:
+  #Handle API error here, e.g. retry or log
+  print(f"OpenAI API returned an API Error: {e}")
+  pass
+
+except openai.APIConnectionError as e:
+  #Handle connection error here
+  print(f"Failed to connect to OpenAI API: {e}")
+  pass
+
+except openai.RateLimitError as e:
+  #Handle rate limit error (we recommend using exponential backoff)
+  print(f"OpenAI API request exceeded rate limit: {e}")
+  pass
 
 print("####################################### END OUTPUT ######################################")
 
