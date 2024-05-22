@@ -75,10 +75,11 @@ except Exception as ex:
 # MODEL = "gpt-4-vision-preview"
 MODEL = "gpt-4o"
 
-# These are used to measure success/loss
+# For Kew
 keys_in_quotes_list = ["'verbatim'", "'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
         "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
 
+# For Peru
 keys_in_quotes_list = ["'verbatim'", "'barcode'", "'collector'", "'collectorNumber'", "'collector1'", "'collector2'", "'collector3'", "'collector4'", "'collectionDate'", "'collectionYYYY'", "'collectionMM'", 
   "'collectionDD'", "'family'", "'genus'", "'species'", "'taxon_name'", "'altitude'", "'altitudeUnit'", "'country'", 
   "'stateProvinceTerritory'", "'location'", "'latitude'", "'longitude'", "'language'", "'specimenNotesSpanish'", "'specimenNotesEnglish'"]
@@ -91,6 +92,7 @@ empty_output_dict = dict([])
 for this_key in key_list:
   empty_output_dict[this_key] = "none"
 
+# This adds columns to the output csv that we were not searching for in the input text
 source_image_col = "source_image"
 error_col = "ERROR"
 key_list_with_logging = [source_image_col, error_col] + key_list
@@ -214,14 +216,14 @@ try:
         error_message = "JSON NOT RETURNED FROM GPT"
         print(error_message)
       
-    dict_returned[source_image_col] = str(image_path)       # Insert the image source file name
-    dict_returned[error_col] = str(error_message)           # Insert column for error message
+    dict_returned[source_image_col] = str(image_path)       # Insert the image source file name into output
+    dict_returned[error_col] = str(error_message)           # Insert error message into output
 
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
   
     if count % batch_size == 0:
       output_df = pd.DataFrame(output_list)
-      output_df = output_df[key_list_with_logging]  # Bring these columns to the front
+      output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
       
       output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
       print(f"WRITING BATCH:{count}")
@@ -231,8 +233,9 @@ try:
   
   #################################### eo for loop
 
+  # For safe measure
   output_df = pd.DataFrame(output_list)
-  output_df = output_df[key_list_with_logging]  # Bring these columns to the front
+  output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
   
   output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
   print(f"WRITING BATCH:{count}")
