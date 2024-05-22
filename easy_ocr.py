@@ -21,7 +21,7 @@ import torch
 from helper_functions import get_torch_cuda_info, get_file_timestamp
 from pathlib import Path
 
-get_torch_cuda_info()
+get_torch_cuda_info() 
 
 file_name = "K004470351_100_label_only_nasty_hw"
 file_name = "K000663552"
