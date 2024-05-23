@@ -108,11 +108,11 @@ prompt = (
 batch_size = 50 # saves every 50
 time_stamp = get_file_timestamp()
 
-count = 104
+count = 200
 
 source_type = "url" # url or offline
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[104:107]
+  image_path_list = URL_PATH_LIST[200:300]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -187,17 +187,17 @@ try:
       # It would be nice to be able to mockup json_returned for testing
       # json_returned = '{"name":"tim", "age":"64"}'
       
-      # NEED TO DEAL WITH SOME FORMATS THAT CREATE INVALID JSON
+      # HERE I DEAL WITH SOME FORMATS THAT CREATE INVALID JSON
       
-      # Turn to raw with "r" to avoid the escaping quotes problem
+      # 1) Turn to raw with "r" to avoid the escaping quotes problem
       json_returned = fr'{json_returned}'
       print(f"content****{json_returned}****")
       
-      # Sometimes null still gets returned, even though I asked it not to
+      # 2) Sometimes null still gets returned, even though I asked it not to
       if "null" in json_returned: 
         json_returned = json_returned.replace("null", "'none'")
       
-      # Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
+      # 3) Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
       # or other odd things like markup '''json and ''' etc.
       # This removes everything prior to the opening "{" and after the closeing "}"
       open_brace_index = json_returned.find("{")
