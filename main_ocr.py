@@ -112,10 +112,9 @@ time_stamp = get_file_timestamp()
 count = 0
 project_name = "Peru"
 
-
 source_type = "url" # url or offline
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:1]
+  image_path_list = URL_PATH_LIST[:3]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -124,6 +123,7 @@ print(f"Number to process:{len(image_path_list)}")
 
 print("####################################### START OUTPUT ######################################")
 try:
+  
   
   for image_path in image_path_list:
     
@@ -169,10 +169,17 @@ try:
         "max_tokens": 2000   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
     
-    ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    num_tries = 3
+    for i in range(num_tries):
+      print("Making Request =====================================================")
+      ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+      response_code = ocr_output.status_code
+      if response_code == 200:
+        break
+      else:
+        print(f"======= 200 not returned. Trying request again number {i} ===========================")
+        print(f"{str(ocr_output.json())}")
 
-    # print(ocr_output.json())
-    
     response_code = ocr_output.status_code
     print(f"ocr_output response_code:{response_code}")
     
