@@ -94,23 +94,6 @@ key_list_with_logging = [source_image_col, error_col] + key_list
 
 output_list = []
 
-# The last sentence about letter "K" really helps a lot - experiment with more prompts like this
-# NOTE: The line f"Do not wrap the JSON codes in JSON markers." gets rid of the leading '''json which you get otherwise
-prompt = (
-  f"Read this hebarium sheet and extract {keys_concatenated}."
-  f"Barcode numbers begin with 'K'."
-  f"Concentrate all your efforts on reading the text."
-  f"Return the data in JSON format with {keys_concatenated} as keys."
-  f"Do not wrap the JSON data in JSON markers."
-  f"If you find no value for a key, return 'none'."
-  )
-
-prompt = (
-  f"Read this hebarium sheet and extract all the text you can see."
-  f"The hebarium sheet may use Spanish words and Spanish characters."
-  f"Concentrate all your efforts on reading the text."
-  )
-
 prompt = (
   f"Read this hebarium sheet and extract all the text you can see."
   f"The hebarium sheet may use Spanish words and Spanish characters."
@@ -124,10 +107,10 @@ prompt = (
 source_type = "url" # url or offline
 batch_size = 50
 
-start_at = 800
+start_at = 0
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:100]
+  image_path_list = URL_PATH_LIST[:5]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -186,7 +169,6 @@ try:
     print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-    # ocr_output = client.chat.completions.create(model=MODEL, messages=payload)
 
     response_code = ocr_output.status_code
     print(f"ocr_output response_code:{response_code}")
@@ -200,7 +182,7 @@ try:
     else:
       json_returned = ocr_output.json()['choices'][0]['message']['content']
       
-      # Turn to raw to avoid escaping quotes problem
+      # Turn to raw with "r" to avoid the escaping quotes problem
       json_returned = fr'{json_returned}'
       
       print(f"content****{json_returned}****")
@@ -213,16 +195,13 @@ try:
         print("############### null detected in json_returned and replace with 'none' ###############")
         json_returned = json_returned.replace("null", "'none'")
       
-      # Occasionaly the whole of the JSON is surrounded by square brakets like '[{"text":"tim"}]'
-      # which is still valid JASON but screws things up
-      # This causes TypeError: list indices must be integers or slices, not str
-      if json_returned[0] == "[": 
-        json_returned = json_returned[1:]
-        print("############### Leading '[' deleted from JSON ###############")
-        
-      if json_returned[-1] == "]": 
-        json_returned = json_returned[:-1]
-        print("############### Trailing '[' deleted from JSON ###############")
+      # Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
+      # Or other odd things like markup '''json and ''' etc.
+      # This removes everything prior to the opening "{" and after the closeing "}"
+      open_brace_index = json_returned.find("{")
+      json_returned = json_returned[open_brace_index:]
+      close_brace_index = json_returned.rfind("}")
+      json_returned = json_returned[:close_brace_index+1]
       
       if is_json(json_returned):
         dict_returned = eval(json_returned) # JSON -> Dict
@@ -249,7 +228,7 @@ try:
   
   #################################### eo for loop
 
-  # For safe measure
+  # For safe measure and during testing where batches are not batch_size
   output_df = pd.DataFrame(output_list)
   output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
   
