@@ -53,7 +53,7 @@ from openai import OpenAI
 
 from db import OPENAI_API_KEY
 from peru_url_list import URL_PATH_LIST
-from helper_functions import encode_image, get_file_timestamp, is_json
+from helper_functions import encode_image, get_file_timestamp, is_json, create_and_save_dataframe
 import base64
 import requests
 import os
@@ -63,13 +63,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import time
 from datetime import datetime
-
-def create_and_save_dataframe(output_list, key_list_with_logging, output_path_name):
-  output_df = pd.DataFrame(output_list)
-  output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
-  output_path = Path(output_path_name)
-  with open(output_path, "w") as f:
-    output_df.to_csv(f, index=False)
 
 try:
   my_api_key = OPENAI_API_KEY          
@@ -106,25 +99,25 @@ prompt = (
   f"You are going to return all of this text in a JSON field called 'verbatim'"
   f"Go through the text you have extracted and return data in JSON format with {keys_concatenated} as keys."
   f"Translate the 'specimenNotesSpanish' field into English and return it in the 'specimenNotesEnglish' field."
+  f"If you can not find latitude and longitude data, estimate it from location information and store it in the latitude and longitude fields in degrees, minutes and seconds format."
+  f"If you find only one collector name, put that name in both the collector and collector1 fields"
   f"Do not wrap the JSON data in JSON markers."
   f"If you find no value for a key never return 'null', return 'none'."
 )
 
+batch_size = 50 # saves every 50
+time_stamp = get_file_timestamp()
 
-batch_size = 50
-start_at = 0
+count = 104
 
 source_type = "url" # url or offline
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:5]
+  image_path_list = URL_PATH_LIST[104:107]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
 
 print(f"Number to process:{len(image_path_list)}")
-
-time_stamp = get_file_timestamp()
-count = start_at
 
 print("####################################### START OUTPUT ######################################")
 try:
@@ -173,7 +166,6 @@ try:
         "max_tokens": 2000   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
     
-    
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
     # print(ocr_output.json())
@@ -182,29 +174,31 @@ try:
     print(f"ocr_output response_code:{response_code}")
     
     if response_code != 200:
+      # Didn't even get to ChatGPT
       print("RAW ocr_output ****", ocr_output.json(),"****")                   
       dict_returned = eval(str(empty_output_dict))
       dict_returned['verbatim'] = str(ocr_output.json())
       error_message = "200 NOT returned from GPT"
       print(error_message)
     else:
+      # We got to ChatGPT
       json_returned = ocr_output.json()['choices'][0]['message']['content']
+      
+      # It would be nice to be able to mockup json_returned for testing
+      # json_returned = '{"name":"tim", "age":"64"}'
+      
+      # NEED TO DEAL WITH SOME FORMATS THAT CREATE INVALID JSON
       
       # Turn to raw with "r" to avoid the escaping quotes problem
       json_returned = fr'{json_returned}'
       print(f"content****{json_returned}****")
       
-      
-      # It would be good to beable to make fake outputs
-      # json_returned = '{"name":"tim", "age":"64"}'
-
       # Sometimes null still gets returned, even though I asked it not to
       if "null" in json_returned: 
-        print("############### null detected in json_returned and replace with 'none' ###############")
         json_returned = json_returned.replace("null", "'none'")
       
       # Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
-      # Or other odd things like markup '''json and ''' etc.
+      # or other odd things like markup '''json and ''' etc.
       # This removes everything prior to the opening "{" and after the closeing "}"
       open_brace_index = json_returned.find("{")
       json_returned = json_returned[open_brace_index:]
