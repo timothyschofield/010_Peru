@@ -64,7 +64,6 @@ import pandas as pd
 import time
 from datetime import datetime
 
-
 try:
   my_api_key = OPENAI_API_KEY          
   client = OpenAI(api_key=my_api_key)
@@ -74,10 +73,6 @@ except Exception as ex:
 
 # MODEL = "gpt-4-vision-preview"
 MODEL = "gpt-4o"
-
-# For Kew
-keys_in_quotes_list = ["'verbatim'", "'barcode number'", "'collector'", "'collector number'", "'date'", "'family'", "'genus'", "'species'", "'altitude'", "'location'", 
-        "'latitude'", "'longitude'", "'language'", "'country'", "'description'"]
 
 # For Peru
 keys_in_quotes_list = ["'verbatim'", "'barcode'", "'collector'", "'collectorNumber'", "'collector1'", "'collector2'", "'collector3'", "'collector4'", "'collectionDate'", "'collectionYYYY'", "'collectionMM'", 
@@ -129,10 +124,10 @@ prompt = (
 source_type = "url" # url or offline
 batch_size = 50
 
-start_at = 900
+start_at = 800
 
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[start_at:]
+  image_path_list = URL_PATH_LIST[:100]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -166,6 +161,7 @@ try:
     # payload is in JSON format
     payload = {
         "model": MODEL,
+        "logprobs": True,
         "messages": [
           {
             "role": "user",
@@ -184,13 +180,14 @@ try:
             ]
           }
         ],
-        "max_tokens": 2000   # max_tokens that can be returned? 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
+        "max_tokens": 2000   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
     
     print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-    
+    # ocr_output = client.chat.completions.create(model=MODEL, messages=payload)
+
     response_code = ocr_output.status_code
     print(f"ocr_output response_code:{response_code}")
     
@@ -202,11 +199,30 @@ try:
       print(error_message)
     else:
       json_returned = ocr_output.json()['choices'][0]['message']['content']
+      
+      # Turn to raw to avoid escaping quotes problem
+      json_returned = fr'{json_returned}'
+      
       print(f"content****{json_returned}****")
+      
+      # It would be good to beable to make fake outputs
+      # json_returned = '{"name":"tim", "age":"64"}'
 
+      # Sometimes null still gets returned, even though I asked it not to
       if "null" in json_returned: 
-        print("null detected in json_returned and replace with 'none'")
+        print("############### null detected in json_returned and replace with 'none' ###############")
         json_returned = json_returned.replace("null", "'none'")
+      
+      # Occasionaly the whole of the JSON is surrounded by square brakets like '[{"text":"tim"}]'
+      # which is still valid JASON but screws things up
+      # This causes TypeError: list indices must be integers or slices, not str
+      if json_returned[0] == "[": 
+        json_returned = json_returned[1:]
+        print("############### Leading '[' deleted from JSON ###############")
+        
+      if json_returned[-1] == "]": 
+        json_returned = json_returned[:-1]
+        print("############### Trailing '[' deleted from JSON ###############")
       
       if is_json(json_returned):
         dict_returned = eval(json_returned) # JSON -> Dict
