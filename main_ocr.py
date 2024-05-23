@@ -101,6 +101,7 @@ prompt = (
   f"Translate the 'specimenNotesSpanish' field into English and return it in the 'specimenNotesEnglish' field."
   f"If you can not find latitude and longitude data, estimate it from location information and store it in the latitude and longitude fields in degrees, minutes and seconds format."
   f"If you find only one collector name, put that name in both the collector and collector1 fields"
+  f"If you find more than one collector name, put all the names in the collector field and then put the individual collectors (or groups of collectors) in fields collector1 to collector4."
   f"Do not wrap the JSON data in JSON markers."
   f"If you find no value for a key never return 'null', return 'none'."
 )
@@ -108,11 +109,13 @@ prompt = (
 batch_size = 50 # saves every 50
 time_stamp = get_file_timestamp()
 
-count = 200
+count = 0
+project_name = "Peru"
+
 
 source_type = "url" # url or offline
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[200:300]
+  image_path_list = URL_PATH_LIST[:1]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -220,14 +223,14 @@ try:
   
     if count % batch_size == 0:
       print(f"WRITING BATCH:{count}")
-      output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+      output_path_name = f"output_gpt/{project_name}_{time_stamp}-{count}.csv"
       create_and_save_dataframe(output_list=output_list, key_list_with_logging=key_list_with_logging, output_path_name=output_path_name)
 
   #################################### eo for loop
 
   # For safe measure and during testing where batches are not batch_size
   print(f"WRITING BATCH:{count}")
-  output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+  output_path_name = f"output_gpt/{project_name}_{time_stamp}-{count}.csv"
   create_and_save_dataframe(output_list=output_list, key_list_with_logging=key_list_with_logging, output_path_name=output_path_name)
   
 except openai.APIError as e:
