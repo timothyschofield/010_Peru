@@ -64,6 +64,13 @@ import pandas as pd
 import time
 from datetime import datetime
 
+def create_and_save_dataframe(output_list, key_list_with_logging, output_path_name):
+  output_df = pd.DataFrame(output_list)
+  output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
+  output_path = Path(output_path_name)
+  with open(output_path, "w") as f:
+    output_df.to_csv(f, index=False)
+
 try:
   my_api_key = OPENAI_API_KEY          
   client = OpenAI(api_key=my_api_key)
@@ -71,7 +78,6 @@ except Exception as ex:
     print("Exception:", ex)
     exit()
 
-# MODEL = "gpt-4-vision-preview"
 MODEL = "gpt-4o"
 
 # For Peru
@@ -104,11 +110,11 @@ prompt = (
   f"If you find no value for a key never return 'null', return 'none'."
 )
 
-source_type = "url" # url or offline
-batch_size = 50
 
+batch_size = 50
 start_at = 0
 
+source_type = "url" # url or offline
 if source_type == "url":
   image_path_list = URL_PATH_LIST[:5]
 else:
@@ -125,6 +131,7 @@ try:
   
   for image_path in image_path_list:
     
+    print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     count+=1
     print(f"count: {count}")
     
@@ -144,7 +151,7 @@ try:
     # payload is in JSON format
     payload = {
         "model": MODEL,
-        "logprobs": True,
+        "logprobs": False,
         "messages": [
           {
             "role": "user",
@@ -166,10 +173,11 @@ try:
         "max_tokens": 2000   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
     
-    print(f"\n########################## OCR OUTPUT {image_path} ##########################\n")
     
     ocr_output = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
+    # print(ocr_output.json())
+    
     response_code = ocr_output.status_code
     print(f"ocr_output response_code:{response_code}")
     
@@ -184,8 +192,8 @@ try:
       
       # Turn to raw with "r" to avoid the escaping quotes problem
       json_returned = fr'{json_returned}'
-      
       print(f"content****{json_returned}****")
+      
       
       # It would be good to beable to make fake outputs
       # json_returned = '{"name":"tim", "age":"64"}'
@@ -217,27 +225,16 @@ try:
     output_list.append(dict_returned) # Create list first, then turn into DataFrame
   
     if count % batch_size == 0:
-      output_df = pd.DataFrame(output_list)
-      output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
-      
-      output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
       print(f"WRITING BATCH:{count}")
-      output_path = Path(output_path_name)
-      with open(output_path, "w") as f:
-        output_df.to_csv(f, index=False)
-  
+      output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+      create_and_save_dataframe(output_list=output_list, key_list_with_logging=key_list_with_logging, output_path_name=output_path_name)
+
   #################################### eo for loop
 
   # For safe measure and during testing where batches are not batch_size
-  output_df = pd.DataFrame(output_list)
-  output_df = output_df[key_list_with_logging]  # Bring reorder dataframe to bring source url and error column to the front
-  
-  output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
   print(f"WRITING BATCH:{count}")
-  output_path = Path(output_path_name)
-  with open(output_path, "w") as f:
-    output_df.to_csv(f, index=False)
-  
+  output_path_name = f"output_gpt/out_{time_stamp}-{count}.csv"
+  create_and_save_dataframe(output_list=output_list, key_list_with_logging=key_list_with_logging, output_path_name=output_path_name)
   
 except openai.APIError as e:
   #Handle API error here, e.g. retry or log
