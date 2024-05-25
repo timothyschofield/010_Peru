@@ -1,6 +1,6 @@
-from helper_functions import is_json
+from helper_functions_peru import is_json
 
-
+ 
 json_returned = '{dfsdf"name":"tim", "age":"64"}fff'
 
 open_brace_index = json_returned.find("{")

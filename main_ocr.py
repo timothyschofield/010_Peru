@@ -5,7 +5,7 @@ Author: Tim Schofield
 Date: 12 December 2023
 
 This uses GPT-4o to OCR images from a local folder
-and process them into JSON
+and process them into JSON. Max image size is 20M. max_tokens returned 4096
 
 WARNING: If you put the actual API key in this file, Git will not allow it to be pushed
 Git calls it a "secret"
@@ -28,24 +28,15 @@ https://stackoverflow.com/questions/17388213/find-the-similarity-metric-between-
 
 startTime = time.perf_counter()
 
-The last field returned in the JSON is:
-'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
-This can be used for accumulating usage information
-
-You uploaded an unsupported image. Please make sure your image is below 20 MB in size and is of one the following formats: ['png', 'jpeg', 'gif', 'webp']
-temperature = 0
-
 ocr_output response_code:500
 RAW ocr_output **** {'error': {'message': 'The server had an error processing your request. Sorry about that! You can retry your request, 
 or contact us through our help center at help.openai.com if you keep seeing this error. (
   Please include the request ID req_80fe5b982069b0fd2d5d2d2ccca7080c in your email.)', 'type': 'server_error', 'param': None, 'code': None}} ****
 
  
-    1. Must handel when an error is returned
-    json object **** {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, 
-    read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}} ****
-    
-    2. Must write outputs to disk in batches
+Must handel when an error is returned
+json object **** {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, 
+read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}} ****
     
 """
 import openai
@@ -53,7 +44,7 @@ from openai import OpenAI
 
 from db import OPENAI_API_KEY
 from peru_url_list import URL_PATH_LIST
-from helper_functions import encode_image, get_file_timestamp, is_json, create_and_save_dataframe
+from helper_functions_peru import encode_image, get_file_timestamp, is_json, create_and_save_dataframe
 import base64
 import requests
 import os
@@ -106,6 +97,7 @@ prompt = (
   f"If you find no value for a key never return 'null', return 'none'."
 )
 
+
 batch_size = 50 # saves every 50
 time_stamp = get_file_timestamp()
 
@@ -114,7 +106,7 @@ project_name = "Peru"
 
 source_type = "url" # url or offline
 if source_type == "url":
-  image_path_list = URL_PATH_LIST[:3]
+  image_path_list = URL_PATH_LIST[:1]
 else:
   image_folder = Path("input_gpt/")
   image_path_list = list(image_folder.glob("*.jpg"))
@@ -123,7 +115,6 @@ print(f"Number to process:{len(image_path_list)}")
 
 print("####################################### START OUTPUT ######################################")
 try:
-  
   
   for image_path in image_path_list:
     
@@ -166,7 +157,7 @@ try:
             ]
           }
         ],
-        "max_tokens": 2000   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
+        "max_tokens": 4096   # The max_tokens that can be returned. 'usage': {'prompt_tokens': 1126, 'completion_tokens': 300, 'total_tokens': 1426}, 'system_fingerprint': 'fp_927397958d'}
     } 
     
     num_tries = 3
@@ -242,17 +233,17 @@ try:
   
 except openai.APIError as e:
   #Handle API error here, e.g. retry or log
-  print(f"OpenAI API returned an API Error: {e}")
+  print(f"TIM: OpenAI API returned an API Error: {e}")
   pass
 
 except openai.APIConnectionError as e:
   #Handle connection error here
-  print(f"Failed to connect to OpenAI API: {e}")
+  print(f"TIM: Failed to connect to OpenAI API: {e}")
   pass
 
 except openai.RateLimitError as e:
   #Handle rate limit error (we recommend using exponential backoff)
-  print(f"OpenAI API request exceeded rate limit: {e}")
+  print(f"TIM: OpenAI API request exceeded rate limit: {e}")
   pass
 
 print("####################################### END OUTPUT ######################################")

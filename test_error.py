@@ -5,8 +5,6 @@ Author: Tim Schofield
 Date: 21 May 2024
 
 """
-
-
 import openai
 from openai import OpenAI
 from db import OPENAI_API_KEY
@@ -28,13 +26,13 @@ try:
   
 except openai.APIError as e:
   #Handle API error here, e.g. retry or log
-  print(f"OpenAI API returned an API Error: {e}")
+  print(f"TIM: OpenAI API returned an API Error: {e}")
   pass
 except openai.APIConnectionError as e:
   #Handle connection error here
-  print(f"Failed to connect to OpenAI API: {e}")
+  print(f"TIM: Failed to connect to OpenAI API: {e}")
   pass
 except openai.RateLimitError as e:
   #Handle rate limit error (we recommend using exponential backoff)
-  print(f"OpenAI API request exceeded rate limit: {e}")
+  print(f"TIM: OpenAI API request exceeded rate limit: {e}")
   pass
